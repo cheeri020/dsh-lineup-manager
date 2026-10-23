@@ -2,3 +2,5 @@
 *.log
 *.bak-*
 .tmp-*
+dist/
+*.tgz

@@ -2,13 +2,17 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+
+// Resolve the package root from this test file, so the suite runs from any
+// checkout location and on any machine.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 // 直接内联被测逻辑的副本？不行——必须测真实代码。
 // 改为：动态导入 index.js，但它的 apply 需要 ctx。我们只测纯函数部分。
 // 由于 index.js 未导出内部函数，这里用「模拟 webServer + 真实文件」的方式端到端测。
 
-const mod = await import('file:///C:/Users/richa/Documents/deepseek-harness/default-workspace/dsh-lineup-manager/index.js')
-
+const mod = await import(pathToFileURL(path.join(REPO, 'dist', 'index.js')).href)
 const TMP = path.join(os.tmpdir(), 'lineup-test-' + Date.now())
 await fs.mkdir(TMP, { recursive: true })
 

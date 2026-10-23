@@ -5,10 +5,12 @@
 // reaches the platform instead of returning pi-ai's frozen built-in catalog.
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const REPO = 'C:/Users/richa/Documents/deepseek-harness/default-workspace/dsh-lineup-manager'
-const mod = await import('file:///' + REPO + '/index.js')
-
+// Resolve the package root from this test file, so the suite runs from any
+// checkout location and on any machine.
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const mod = await import(pathToFileURL(path.join(REPO, 'dist', 'index.js')).href)
 let handler = null
 // Minimal ctx: real llm discovery shim that performs a genuine HTTP GET.
 // We mirror what discoverModels does for openai-completions: GET {baseURL}/models

@@ -1,53 +1,90 @@
 # dsh-lineup-manager
 
-线路管理器：在 DeepSeek Harness 设置页勾选要显示的模型线路，按供应商分组管理。
+**Pick which model lineups appear in DeepSeek Harness's model picker — grouped by provider, and refreshed live from each platform.**
 
-## 解决什么问题
+[English](README.md) · [简体中文](README-zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
 
-DSH 的模型下拉菜单按供应商分组，但显示的条目数取决于配置：
+## Compatibility
 
-- 供应商在 `cordis.patch.yml` 里**声明了 `models` 列表** → 菜单只显示列表内的线路
-- 供应商**没有声明 `models`** → 菜单显示该适配器返回的**全部线路**（可能上百条）
+| Surface | Status |
+|---|---|
+| Harness | DeepSeek Harness `0.2.1-rc.2` |
+| Node | `^22.19.0 || >=24.0.0` |
+| Platforms | All (plain ESM; no native code, no build toolchain) |
 
-这导致只想保留免费线路时，必须手工编辑 YAML 文件。本插件把这件事变成设置页里的勾选操作。
+## The problem
 
-## 用法
+DSH groups its model dropdown by provider, but how many entries show up depends on your config:
 
-1. 打开 **设置 → 顶部「线路管理」按钮**
-2. 面板列出配置文件中每个供应商及其线路，勾选框控制显示哪些
-3. 每个供应商可单独：**全选 / 全不选 / 仅保留 free**，然后点该组的 **保存**
-4. 保存后**重启 DSH** 生效
+- a provider that **declares a `models:` list** in `cordis.patch.yml` → only those lineups appear
+- a provider with **no `models:` list** → the picker shows the adapter's *entire* catalog, which can be hundreds of entries
 
-未保存的改动会显示提示；关闭面板时会二次确认。
+So keeping only the free lineups means hand-editing YAML. This plugin turns that into checkboxes in Settings.
 
-## 线路刷新
+Platforms change their lineup every few days — new models appear, free tiers vanish. Refresh pulls the live list and marks the difference, so you can see what moved without leaving the panel.
 
-各平台的线路三不五时就变（新增、下线、免费额度调整）。**刷新**会直接向平台端点
-拉取当前真实可用的线路清单，与本地配置比对，在面板上标出差异：
+## Features
 
-- 绿色 **新增** 徽标 = 平台有、但你没勾选
-- 灰色划掉 **已下线** 徽标 = 你勾了、但平台已不再提供
-- 每家的 **刷新** 按钮刷一家，页脚的 **全部刷新** 一起刷
+- Per-provider checkboxes for every declared lineup
+- Bulk per provider: **All** / **None** / **Free only**
+- **Refresh** — pulls the platform's current lineup list and flags **new** and **gone** entries. Available per provider and as **Refresh all**
+- Live-added models become selectable immediately, before they exist in your config
+- Writes are surgical and reversible: only the target provider's `models:` block is replaced, with a timestamped backup, a structural check, and a read-back verification that rolls back on mismatch
 
-**刷新只标记，绝不写盘。** 改动依然要你手动勾选后点该家的「保存」才会落盘，
-并照常走备份 + 回读校验 + 失败回滚。
+## Install
 
-### 实现要点（易踩的坑）
+### From a tarball (recommended)
 
-- **必须绕开 pi-ai 内置 catalog。** `discoverModels` 一旦收到 `provider` 参数，
-  对 openrouter / nvidia / opencode 这类内置了 catalog 的供应商会**直接返回随 DSH
-  版本冻结的旧清单**，根本不发请求——刷新就形同虚设。因此刷新只传 `baseURL`。
-  这条约束由 `test-refresh.mjs` 的 R2 守护。
-- **baseURL 兜底。** 配置里没写 `baseURL` 的供应商（如 opencode），端点从 pi-ai
-  的 catalog 里取。同一供应商在 catalog 里按协议有多个端点，需按声明的 `api`
-  匹配，否则会取到 `anthropic-messages` 的路径而 404。
-- **asar 按需读取。** catalog 装在 `app.asar` 内（约 174 MB）。整包读入会花
-  ~125 ms 并把 RSS 顶到数百 MB，而「全部刷新」是并发解析多家。因此只读归档头部
-  与目标条目字节区间；实测 4 家并发由 ~905 MB 降到 ~69 MB。由 `test-asar.mjs` 守护。
-- **key 过期会被如实报出。** 平台返回 401 `api_key_expired` 时该家显示失败徽标，
-  不影响其他家，本地配置也不受影响。
+```sh
+pnpm pack                       # produces dsh-lineup-manager-<version>.tgz
+dsh plugin add ./dsh-lineup-manager-0.2.0.tgz
+```
 
-### 强烈建议：每个供应商都显式写 baseURL
+Restart DSH afterwards.
+
+### From a git checkout
+
+```sh
+dsh plugin add github:<you>/dsh-lineup-manager
+```
+
+The `prepare` script builds `dist/` on install. pnpm >=10 refuses to run git dependencies' build scripts by default; if the first `add` fails, add this to the profile's `pnpm-workspace.yaml` and retry:
+
+```yaml
+allowBuilds:
+  dsh-lineup-manager: true
+```
+
+Only allow this for sources you trust, and pin a commit: `github:<you>/dsh-lineup-manager#<sha>`.
+
+### Manual
+
+```sh
+pnpm install
+pnpm build                     # emits dist/ and verifies it
+```
+
+Then copy the package into `$DSH_HOME/profiles/<profile>/node_modules/` and restart DSH.
+
+## Usage
+
+1. Open **Settings → the "Lineups" button at the top**
+2. The panel lists every provider in your `cordis.patch.yml` with a checkbox per lineup
+3. Per provider, use **All** / **None** / **Free only**, then **Save** that group
+4. **Restart DSH** for the model picker to reflect the change
+
+Unsaved changes are flagged; closing the panel asks for confirmation.
+
+### Refresh
+
+Press **Refresh** on a provider (or **Refresh all** in the footer) to pull that platform's current list:
+
+- a green **new** badge = the platform offers it, you have not checked it
+- a struck-through grey **gone** badge = you checked it, the platform no longer offers it
+
+**Refresh never writes.** It only labels. Nothing reaches the config until you check boxes and press Save, which still goes through the backup / structural check / read-back-rollback path.
+
+### Strongly recommended: declare a baseURL for every provider
 
 ```yaml
       openrouter:
@@ -56,74 +93,80 @@ DSH 的模型下拉菜单按供应商分组，但显示的条目数取决于配�
         baseURL: https://openrouter.ai/api/v1
 ```
 
-原因：**没写 `baseURL` 时，插件只能去读安装目录里的 pi-ai catalog 来推断端点**
-（那段兜底既要做模块解析、又要穿透 `app.asar`）。这条链路依赖宿主环境，容易失败；
-而一失败表现就很差——handler 抛异常、响应为空，客户端只能显示
-`HTTP 400 (empty body)`，看不出真实原因（这个坑实际发生过，排查了很久）。
+Without a `baseURL`, the plugin must infer the endpoint by reading the installed pi-ai catalog out of `app.asar`. That path depends on the host environment and fails poorly when it does — as an unwritten response the client can only report as `HTTP 400 (empty body)`. Declaring `baseURL` goes straight to the network and never touches that code.
 
-写死 `baseURL` 就完全走直连，不碰那段逻辑。已实测可用的端点：
+Verified endpoints:
 
-| 供应商 | baseURL |
+| Provider | baseURL |
 |---|---|
 | openrouter | `https://openrouter.ai/api/v1` |
 | opencode | `https://opencode.ai/zen/v1` |
 | nvidia | `https://integrate.api.nvidia.com/v1` |
 
-补 `baseURL` 后需**重启 DSH** 生效。
+A `baseURL` change needs a DSH restart.
 
-## 安全性
+## Safety
 
-写配置文件是有风险的操作（写坏了 DSH 可能启动失败），本插件做了四层保护：
+Editing a config file is risky — a corrupted `cordis.patch.yml` can stop DSH from starting — so writes are guarded four ways:
 
-| 保护 | 说明 |
+| Guard | What it does |
 |---|---|
-| 精确替换 | 只替换目标供应商的 `models:` 行块，不重写整个文件，其他段与 provider 完全不动 |
-| 写入前备份 | 每次写入生成 `cordis.patch.yml.bak-lineup-<时间戳>` |
-| 结构校验 | 写入前先在内存中校验（provider 无重复、模型 id 合法），不合格直接拒绝 |
-| 回读验证 | 写入后从磁盘重读比对，不一致则自动回滚到写入前内容 |
+| Surgical replace | Only the target provider's `models:` line block is rewritten; other providers and sections are untouched |
+| Backup first | Every write emits `cordis.patch.yml.bak-lineup-<timestamp>` beforehand |
+| Structural check | In-memory validation (no duplicate providers, legal model ids) before anything is written; rejects on failure |
+| Read-back verify | Re-reads from disk and compares; restores the backup on mismatch |
 
-另外：未知供应商返回 409 拒绝；重复 id、含空格的 id 被拒；正文大小上限 256 KB。
+Also: unknown providers are refused with 409; duplicate or whitespace-containing ids are rejected; request bodies are capped at 256 KB.
 
-备份文件会累积。确认配置正常后可自行清理 `cordis.patch.yml.bak-lineup-*`。
+Backups accumulate. Clean up `cordis.patch.yml.bak-lineup-*` once you are happy with the config.
 
-## 接口
+## How refresh works (and the traps)
 
-服务端注册一个端点，客户端调用：
+### It must bypass pi-ai's built-in catalog
+
+`discoverModels` returns the *installed* catalog — frozen at your DSH version — the moment it receives a `provider` argument. That is silent staleness: the feature looks like it works while showing months-old data. Refresh therefore sends `baseURL` and **never** `provider`. Guarded by `test-refresh.mjs` (R2).
+
+### Namespace
+
+`dsh-llm-pi-ai` registers model discovery under **its own** loader entry id — `llm-pi-ai` as declared in the profile. This plugin runs under a different entry, so deriving the namespace from `ctx.fiber.entry.options.id` yields `dsh-lineup-manager` and the kernel answers `NO_DISCOVERY`. The namespace is a constant. Guarded by `test-refresh.mjs` (R9).
+
+### asar reads
+
+The catalog lives inside `app.asar` (~174 MB). Reading it whole costs ~125 ms and hundreds of MB of RSS, multiplied across a refresh-all. The reader seeks: header plus the one entry's byte range. Measured 4 concurrent resolutions drop from ~905 MB to ~69 MB. Guarded by `test-asar.mjs`.
+
+### Keys that expired
+
+A platform answering `401 api_key_expired` makes that provider show a failure badge. Other providers are unaffected and your config is untouched — refresh reporting this is the point, not a bug.
+
+## Layout
 
 ```
-POST /dsh-lineup-manager/api
-  { "op": "read" }                              → { ok, file, mtime, providers[] }
-  { "op": "write", "provider": "openrouter",
-    "ids": ["a/1:free", "a/2:free"] }           → { ok, provider, count, backup, restartRequired }
-  { "op": "refresh", "provider": "openrouter" }  → { ok, provider, result: { baseURL, live[], added[], removed[], common[] } }
-  { "op": "refreshAll" }                         → { ok, results: [{ provider, ok, result|null, error? }] }
+src/                  runtime sources
+  index.js            host half: HTTP API over cordis.patch.yml
+  client.js           browser half: the Settings panel
+  cordis.patch.yml    bundle patch
+scripts/build.mjs     emits dist/, verifies the copy
+tests/                plain-Node test suites
+dist/                 build output (not tracked)
 ```
 
-`ids` 的顺序即写入顺序，因此可用于重排菜单。
+## Development
 
-`refresh` / `refreshAll` 是**只读**操作：不写文件、不产生备份。`refresh` 在端点失败时
-返回 HTTP 502 与可读的 `error`；`refreshAll` 始终返回 200，逐家给出 `ok` 与 `error`，
-单家失败不影响其他家。
-
-## 打包
-
-- 服务端 `index.js`：ESM，导出 `name` / `inject` / `apply` / `__test`
-- 客户端 `client.js`：手写 `window.__ModuleLoader__.load({ id, factory(require) })`，无需构建工具
-- **loader id 必须等于 package.json 的 `name`**，否则运行时找不到模块，插件不会激活
-
-## 测试
-
-```bash
-node test-server.mjs    # 服务端读写逻辑（17 项）
-node test-accept.mjs    # 安装完整性 + 端到端（22 项）
-node test-refresh.mjs   # 线路刷新：差异计算、绕过静态 catalog、只读性、错误隔离（19 项）
-node test-asar.mjs      # asar 读取器内存行为（6 项）
-node test-live.mjs      # 真实网络实测：对配置中真实供应商执行 refreshAll（需有效 key）
+```sh
+pnpm build        # emit + verify dist/
+pnpm test         # 66 checks across four suites
+pnpm test:live    # hits real provider endpoints; needs real credentials
 ```
 
-前四套在临时目录用真实文件跑端到端，不触碰实际 profile。`test-live.mjs` 会真实联网
-并读取实际 profile 的 key，仅在手动验证时运行；它同时断言配置文件未被刷新改动。
+| Suite | Covers |
+|---|---|
+| `test-server.mjs` | config read/write, the four write guards (17) |
+| `test-accept.mjs` | install integrity + end-to-end (22) |
+| `test-refresh.mjs` | refresh diffing, catalog bypass, namespace, read-only (21) |
+| `test-asar.mjs` | asar reader memory behavior (6) |
 
-## 兼容性
+The four suites run entirely in temporary directories and never touch a real profile. `test-live.mjs` does hit the network and reads your real credentials; it also asserts the config is unchanged afterwards.
 
-宿主 DSH `0.2.1-rc.2`。依赖 `webServer` 服务与 `settings.action` slot。
+## License
+
+[MIT](LICENSE)

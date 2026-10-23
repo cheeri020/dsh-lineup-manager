@@ -1,23 +1,44 @@
 {
   "name": "dsh-lineup-manager",
-  "version": "0.1.0",
-  "description": "线路管理器：在设置页勾选要显示的模型线路，按供应商分组管理 | Lineup manager for DeepSeek Harness: pick which model lineups appear in the model picker, grouped by provider",
+  "version": "0.2.0",
+  "description": "线路管理器：在设置页勾选要显示的模型线路，按供应商分组管理，支持从平台实时刷新并标记新增/已下线 | Lineup manager for DeepSeek Harness: choose which model lineups appear in the model picker, grouped by provider, with a live refresh that flags additions and removals",
   "type": "module",
-  "main": "./index.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./index.js",
-    "./client": "./client.js",
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "license": "MIT",
   "engines": {
-    "node": ">=22.19.0"
+    "node": "^22.19.0 || >=24.0.0"
   },
+  "packageManager": "pnpm@11.7.0",
   "files": [
-    "index.js",
-    "client.js",
+    "dist",
+    "./dist/index.js",
+    "./dist/client.js",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "README-zh.md",
+    "README-es.md",
+    "README-pt.md",
+    "README-hi.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepare": "node scripts/build.mjs",
+    "test": "node tests/test-server.mjs && node tests/test-accept.mjs && node tests/test-refresh.mjs && node tests/test-asar.mjs",
+    "test:live": "node tests/test-live.mjs"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "models",
+    "lineup",
+    "provider"
   ],
   "dsh": {
     "bundle": {
