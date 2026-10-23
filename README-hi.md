@@ -29,7 +29,7 @@ DSH मॉडल चयनकर्ता को प्रदाता के �
 
 ```sh
 pnpm pack
-dsh plugin add ./dsh-lineup-manager-0.2.0.tgz
+dsh plugin add ./dsh-external-dsh-lineup-manager-0.2.0.tgz
 ```
 
 इसके बाद DSH पुनः आरंभ करें।

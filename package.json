@@ -1,5 +1,5 @@
 {
-  "name": "dsh-lineup-manager",
+  "name": "@dsh-external/dsh-lineup-manager",
   "version": "0.2.0",
   "description": "线路管理器：在设置页勾选要显示的模型线路，按供应商分组管理，支持从平台实时刷新并标记新增/已下线 | Lineup manager for DeepSeek Harness: choose which model lineups appear in the model picker, grouped by provider, with a live refresh that flags additions and removals",
   "type": "module",

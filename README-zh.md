@@ -37,8 +37,8 @@ DSH 的模型下拉菜单按供应商分组，但显示多少条目取决于你�
 ### 用 tarball（推荐）
 
 ```sh
-pnpm pack                       # 产出 dsh-lineup-manager-<version>.tgz
-dsh plugin add ./dsh-lineup-manager-0.2.0.tgz
+pnpm pack                       # 产出 dsh-external-dsh-lineup-manager-<version>.tgz
+dsh plugin add ./dsh-external-dsh-lineup-manager-0.2.0.tgz
 ```
 
 之后重启 DSH。
@@ -54,7 +54,7 @@ dsh plugin add github:<you>/dsh-lineup-manager
 
 ```yaml
 allowBuilds:
-  dsh-lineup-manager: true
+  "@dsh-external/dsh-lineup-manager": true
 ```
 
 只对可信来源放行，并固定提交：`github:<you>/dsh-lineup-manager#<sha>`。

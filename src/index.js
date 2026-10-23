@@ -26,7 +26,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
-export const name = 'dsh-lineup-manager'
+export const name = '@dsh-external/dsh-lineup-manager'
 
 export const inject = ['webServer']
 

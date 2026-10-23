@@ -36,8 +36,8 @@ Platforms change their lineup every few days — new models appear, free tiers v
 ### From a tarball (recommended)
 
 ```sh
-pnpm pack                       # produces dsh-lineup-manager-<version>.tgz
-dsh plugin add ./dsh-lineup-manager-0.2.0.tgz
+pnpm pack                       # produces dsh-external-dsh-lineup-manager-<version>.tgz
+dsh plugin add ./dsh-external-dsh-lineup-manager-0.2.0.tgz
 ```
 
 Restart DSH afterwards.
@@ -52,7 +52,7 @@ The `prepare` script builds `dist/` on install. pnpm >=10 refuses to run git dep
 
 ```yaml
 allowBuilds:
-  dsh-lineup-manager: true
+  "@dsh-external/dsh-lineup-manager": true
 ```
 
 Only allow this for sources you trust, and pin a commit: `github:<you>/dsh-lineup-manager#<sha>`.

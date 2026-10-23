@@ -29,7 +29,7 @@ DSH agrupa el selector de modelos por proveedor, pero cuántas entradas aparecen
 
 ```sh
 pnpm pack
-dsh plugin add ./dsh-lineup-manager-0.2.0.tgz
+dsh plugin add ./dsh-external-dsh-lineup-manager-0.2.0.tgz
 ```
 
 Reinicia DSH después.

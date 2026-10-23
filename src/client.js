@@ -12,7 +12,7 @@
 // Loader id MUST equal package.json's `name`, otherwise the module table lookup
 // fails and the plugin never activates.
 window.__ModuleLoader__.load({
-  id: 'dsh-lineup-manager',
+  id: '@dsh-external/dsh-lineup-manager',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
@@ -416,7 +416,7 @@ window.__ModuleLoader__.load({
       apply(ctx) {
         ctx.slots.inject('settings.action', () => ctx.slots.register({
           name: 'settings.action',
-          id: 'dsh-lineup-manager',
+  id: '@dsh-external/dsh-lineup-manager',
           order: 10,
         }, EntryButton));
       },
