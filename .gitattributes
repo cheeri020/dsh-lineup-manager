@@ -1,0 +1,14 @@
+# Keep the checkout's line endings stable across machines.
+#
+# Without this, git's autocrlf setting rewrites every line ending on clone, and
+# a byte-count difference appears between two checkouts of the same commit
+# (789 bytes for src/index.js alone). Normalizing to LF in the repository keeps
+# the build output — which is a byte-for-byte copy — identical everywhere, and
+# stops line-ending churn from showing up as whole-file diffs.
+* text=auto eol=lf
+
+# Binary artifacts must never be touched.
+*.tgz binary
+*.png binary
+*.ico binary
+*.zstd binary
